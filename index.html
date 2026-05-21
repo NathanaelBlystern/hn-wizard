@@ -17,7 +17,6 @@
         .sidebar { width: 280px; background-color: var(--bg-sidebar); display: flex; flex-direction: column; flex-shrink: 0; z-index: 10;}
         .sidebar-logo { padding: 15px 20px; color: white; font-size: 20px; font-weight: bold; background-color: #202428; border-bottom: 1px solid #1b1e21; letter-spacing: 1px;}
         
-        /* SEARCH */
         .search-container { padding: 10px 15px; background: #202428; border-bottom: 1px solid #1b1e21; position: relative;}
         .search-input { width: 100%; padding: 8px 10px 8px 30px; border: none; border-radius: 4px; background: #3a4149; color: white; font-size: 13px; box-sizing: border-box; outline: none; }
         .search-input::placeholder { color: #999; }
@@ -288,7 +287,6 @@
         }
     }
 
-    // SEARCH LOGIC
     document.getElementById('global-search').addEventListener('input', function(e) {
         const query = e.target.value.toLowerCase().trim();
         const resContainer = document.getElementById('search-results');
@@ -314,7 +312,7 @@
         }
 
         if (matches.length > 0) {
-            matches.slice(0, 10).forEach(match => { // 10 результ
+            matches.slice(0, 10).forEach(match => {
                 const div = document.createElement('div');
                 div.className = 'search-item';
                 let badge = match.node.isCustom ? ' <span class="custom-badge" style="background:#6f42c1;color:white;">ВЛАСНИЙ</span>' : '';
@@ -333,14 +331,12 @@
         }
     });
 
-    // Close search when clicking outside
     document.addEventListener('click', function(e) {
         if (!e.target.closest('.search-container')) {
             document.getElementById('search-results').classList.add('hidden');
         }
     });
 
-    // BACK NAVIGATION LOGIC
     function goBack() {
         if (historyStack.length > 0) {
             const prevNode = historyStack.pop();
@@ -348,7 +344,6 @@
         }
     }
 
-    // COPY TEXT LOGIC
     function copyText(elementId, btnElement) {
         const textToCopy = document.getElementById(elementId).innerText;
         navigator.clipboard.writeText(textToCopy).then(() => {
@@ -373,22 +368,19 @@
         if(!db[nodeId]) return;
         const node = db[nodeId];
 
-        // History Management
         if (!isBacking && currentRoot && currentRoot !== nodeId) {
             historyStack.push(currentRoot);
         }
         currentRoot = nodeId;
 
-        // Toggle Back Button
         const backBtn = document.getElementById('btn-back');
         if (historyStack.length > 0 && nodeId !== 'base_script') {
             backBtn.classList.remove('hidden');
         } else {
             backBtn.classList.add('hidden');
-            if (nodeId === 'base_script') historyStack = []; // clear history on home
+            if (nodeId === 'base_script') historyStack = [];
         }
 
-        // Menu Highlighting
         document.querySelectorAll('.sidebar-menu li').forEach(li => {
             li.classList.remove('active');
             if (li.dataset.id === currentRoot) {
@@ -404,15 +396,14 @@
             topbar.innerHTML = `${node.category || "Власний скрипт"} <span class="custom-badge">КАСТОМНИЙ</span>`;
             wrapper.classList.add('is-custom');
             document.getElementById('action-label-title').innerText = 'ДІЇ:';
-            document.getElementById('btn-edit').classList.remove('hidden');
-            document.getElementById('btn-delete').classList.remove('hidden');
         } else {
             topbar.innerText = node.category || "HomeNet Support";
             wrapper.classList.remove('is-custom');
             document.getElementById('action-label-title').innerText = 'ДІЇ В СИСТЕМІ (ABillS / UserSide):';
-            document.getElementById('btn-edit').classList.add('hidden');
-            document.getElementById('btn-delete').classList.add('hidden');
         }
+        
+        document.getElementById('btn-edit').classList.remove('hidden');
+        document.getElementById('btn-delete').classList.remove('hidden');
 
         document.getElementById('node-title').innerText = node.title;
 
@@ -595,7 +586,6 @@
         }
     }
 
-    /* === ЛОГІКА КАЛЬКУЛЯТОРА === */
     const uiConfig = {
         std: [
             { id: 'pwr', name: 'POWER', states: ['on|🟢 Горить', 'off|⚪ Не горить'] },
@@ -704,7 +694,7 @@
                 path = "1. Спитати про видимі пошкодження кабелю.\n2. Скинути сесію в ABillS (Hang Up).\n3. UserSide ➔ Створити завдання ➔ Інцидент ➔ «Обрив на лінії / LOS».\n4. Виконавець: ВІДДІЛ МОНІТОРГИНГУ (або КУЩ, якщо порвано вдома).";
             } else if (reg !== 'on') {
                 title = "Відсутня реєстрація (Аналог PON).";
-                path = "1. Скинути сесію (Hang Up) та перезавантажити модем.\n2. UserSide ➔ Інцидент ➔ «Діагностика обладнання».\n3. Опис: «REG блимає/не горить».\n4. Виконавець: ВІДДІЛ МОНІТОРГИНГУ.";
+                path = "1. Скинути сесію (Hang Up) та перезавантажити модем.\n2. UserSide ➔ Інцидент ➔ «Діагностика обладнання».\n3. Опис: «REG блимає/не горить, ребут не допоміг».\n4. Виконавець: ВІДДІЛ МОНІТОРГИНГУ.";
             } else if (link === 'off') {
                 title = "Відсутній зв'язок по LAN.";
                 path = "1. Перевірити кабель між модемом і роутером.\n2. Роутер наш: Інцидент ➔ КУЩ.\n3. Роутер чужий: Заявка «Додаткові послуги» (Платний виклик 100 грн).";
@@ -722,7 +712,7 @@
                 path = "1. Попросити абонента перевірити розетку та блок живлення.\n2. Якщо не працює: UserSide ➔ Інцидент ➔ «Діагностика обладнання».\n3. Виконавець: КУЩ.";
             } else if (fx === 'off' && tx === 'off') {
                 title = "Відсутнє з'єднання і по Оптиці, і по LAN.";
-                path = "1. Скинути сесію (Hang Up).\n2. UserSide ➔ Інцидент ➔ «Діагностика обладнання».\n3. Опис: «Горить лише PWR. Відсутній сигнал по FX та TX».\n4. Виконавець: КУЩ.";
+                path = "1. Скинути сесію (Hang Up).\n2. UserSide ➔ Інцидент ➔ «Діагностика обладнання».\n3. Опис: «Горить лише PWR. Відсутній лінк по FX та TX».\n4. Виконавець: КУЩ.";
             } else if (fx === 'off') {
                 title = "Відсутнє з'єднання по оптичному кабелю (Аналог LOS).";
                 path = "1. Скинути сесію (Hang Up).\n2. UserSide ➔ Інцидент ➔ «Обрив на лінії / LOS».\n3. Виконавець: ВІДДІЛ МОНІТОРГИНГУ (або КУЩ, якщо обрив вдома).";

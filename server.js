@@ -15,44 +15,70 @@ const mimeTypes = {
 };
 
 http.createServer((req, res) => {
-    // API кастом скриптів
     if (req.method === 'POST' && req.url === '/api/save-custom') {
         let body = '';
         req.on('data', chunk => body += chunk.toString());
         req.on('end', () => {
             const payload = JSON.parse(body);
             const customFilePath = path.join(__dirname, 'custom_data.json');
-            
-            let currentData = {};
-            if (fs.existsSync(customFilePath)) {
-                currentData = JSON.parse(fs.readFileSync(customFilePath));
-            }
+            const baseFilePath = path.join(__dirname, 'data.json');
             
             const nodeId = payload.id || ('custom_' + Date.now());
             delete payload.id;
             
-            payload.isCustom = true;
-            currentData[nodeId] = payload;
+            let savedToBase = false;
+
+            if (fs.existsSync(baseFilePath)) {
+                let baseData = JSON.parse(fs.readFileSync(baseFilePath));
+                if (baseData[nodeId]) {
+                    payload.isCustom = false;
+                    baseData[nodeId] = payload;
+                    fs.writeFileSync(baseFilePath, JSON.stringify(baseData, null, 2));
+                    savedToBase = true;
+                }
+            }
             
-            fs.writeFileSync(customFilePath, JSON.stringify(currentData, null, 2));
+            if (!savedToBase) {
+                let currentData = {};
+                if (fs.existsSync(customFilePath)) {
+                    currentData = JSON.parse(fs.readFileSync(customFilePath));
+                }
+                payload.isCustom = true;
+                currentData[nodeId] = payload;
+                fs.writeFileSync(customFilePath, JSON.stringify(currentData, null, 2));
+            }
+            
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ success: true, id: nodeId }));
         });
         return;
     }
 
-    // API для ВИДАЛЕННЯ кастомних скриптів
     if (req.method === 'POST' && req.url === '/api/delete-custom') {
         let body = '';
         req.on('data', chunk => body += chunk.toString());
         req.on('end', () => {
             const payload = JSON.parse(body);
             const customFilePath = path.join(__dirname, 'custom_data.json');
+            const baseFilePath = path.join(__dirname, 'data.json');
             
-            if (fs.existsSync(customFilePath) && payload.id) {
-                let currentData = JSON.parse(fs.readFileSync(customFilePath));
-                delete currentData[payload.id]; // видаляється вузол
-                fs.writeFileSync(customFilePath, JSON.stringify(currentData, null, 2));
+            let deleted = false;
+
+            if (fs.existsSync(baseFilePath) && payload.id) {
+                let baseData = JSON.parse(fs.readFileSync(baseFilePath));
+                if (baseData[payload.id]) {
+                    delete baseData[payload.id];
+                    fs.writeFileSync(baseFilePath, JSON.stringify(baseData, null, 2));
+                    deleted = true;
+                }
+            }
+            
+            if (!deleted && fs.existsSync(customFilePath) && payload.id) {
+                let customData = JSON.parse(fs.readFileSync(customFilePath));
+                if (customData[payload.id]) {
+                    delete customData[payload.id];
+                    fs.writeFileSync(customFilePath, JSON.stringify(customData, null, 2));
+                }
             }
             
             res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -61,7 +87,6 @@ http.createServer((req, res) => {
         return;
     }
 	
-    // HTML, PNG, PDF...
     let filePath = '.' + req.url;
     if (filePath === './') filePath = './index.html';
 
