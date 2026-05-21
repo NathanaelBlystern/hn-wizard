@@ -518,7 +518,7 @@
         }
     }
 
-    async function saveCustomNode() {
+async function saveCustomNode() {
         const buttons = [];
         document.querySelectorAll('.editor-btn-row').forEach(row => {
             const text = row.querySelector('.edit-btn-text').value.trim();
@@ -528,7 +528,15 @@
             }
         });
 
+        // БЕРЕМО СТАРІ ДАНІ: зберігаємо pdf, customUi та інші параметри, яких немає у формі
+        let existingData = {};
+        if (editingNodeId && db[editingNodeId]) {
+            existingData = db[editingNodeId];
+        }
+
+        // Формуємо новий об'єкт, поєднуючи старі дані з новими
         const newData = {
+            ...existingData, // Цей рядок автоматично переносить pdf та інше зі старого скрипта
             isHidden: document.getElementById('edit-hidden').checked,
             category: document.getElementById('edit-category').value.trim() || 'Власний скрипт',
             title: document.getElementById('edit-title').value.trim() || 'Без назви',
