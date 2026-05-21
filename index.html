@@ -224,6 +224,10 @@
                         <textarea id="edit-info" placeholder="Правила, терміни, нюанси..."></textarea>
                     </div>
                     <div>
+                        <label>Посилання на PDF інструкцію (Необов'язково):</label>
+                        <input type="text" id="edit-pdf" placeholder="наприклад: files/instruction.pdf або https://...">
+                    </div>
+                    <div>
                         <label>Дії оператора (Що робити в ЮС/Білінгу):</label>
                         <textarea id="edit-action" placeholder="1. Відкрити...\n2. Натиснути..."></textarea>
                     </div>
@@ -495,6 +499,7 @@
             document.getElementById('edit-category').value = node.category || '';
             document.getElementById('edit-title').value = node.title || '';
             document.getElementById('edit-info').value = node.info || '';
+            document.getElementById('edit-pdf').value = node.pdf || '';
             document.getElementById('edit-action').value = node.action || '';
             document.getElementById('edit-script').value = node.script || '';
             
@@ -512,13 +517,14 @@
             document.getElementById('edit-category').value = '';
             document.getElementById('edit-title').value = '';
             document.getElementById('edit-info').value = '';
+            document.getElementById('edit-pdf').value = '';
             document.getElementById('edit-action').value = '';
             document.getElementById('edit-script').value = '';
             addEditorButton('Завершити', 'base_script');
         }
     }
 
-async function saveCustomNode() {
+    async function saveCustomNode() {
         const buttons = [];
         document.querySelectorAll('.editor-btn-row').forEach(row => {
             const text = row.querySelector('.edit-btn-text').value.trim();
@@ -528,15 +534,13 @@ async function saveCustomNode() {
             }
         });
 
-        // БЕРЕМО СТАРІ ДАНІ: зберігаємо pdf, customUi та інші параметри, яких немає у формі
         let existingData = {};
         if (editingNodeId && db[editingNodeId]) {
             existingData = db[editingNodeId];
         }
 
-        // Формуємо новий об'єкт, поєднуючи старі дані з новими
         const newData = {
-            ...existingData, // Цей рядок автоматично переносить pdf та інше зі старого скрипта
+            ...existingData,
             isHidden: document.getElementById('edit-hidden').checked,
             category: document.getElementById('edit-category').value.trim() || 'Власний скрипт',
             title: document.getElementById('edit-title').value.trim() || 'Без назви',
@@ -545,6 +549,13 @@ async function saveCustomNode() {
             script: document.getElementById('edit-script').value.trim(),
             buttons: buttons
         };
+
+        const pdfLink = document.getElementById('edit-pdf').value.trim();
+        if (pdfLink) {
+            newData.pdf = pdfLink;
+        } else {
+            delete newData.pdf;
+        }
 
         if (editingNodeId) {
             newData.id = editingNodeId;
