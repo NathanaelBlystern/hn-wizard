@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HomeNet | Wizard</title>
+    <link rel="icon" type="image/png" href="files/logo.png">
+    <style>
+        :root {
+            --bg-body: #f4f5f7; --bg-sidebar: #2f353a; --bg-topbar: #28a745;
+            --color-primary: #337ab7; --color-danger: #d9534f; --color-warning: #f0ad4e; --color-success: #5cb85c;
+            --color-custom: #6f42c1;
+            --text-sidebar: #c8ced3; --border-color: #e4e7ea;
+        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; display: flex; height: 100vh; background-color: var(--bg-body); color: #333; overflow: hidden; }
+        
+        .sidebar { width: 280px; background-color: var(--bg-sidebar); display: flex; flex-direction: column; flex-shrink: 0; z-index: 10;}
+        .sidebar-logo { padding: 15px 20px; color: white; font-size: 20px; font-weight: bold; background-color: #202428; border-bottom: 1px solid #1b1e21; letter-spacing: 1px;}
+        
+        /* SEARCH */
+        .search-container { padding: 10px 15px; background: #202428; border-bottom: 1px solid #1b1e21; position: relative;}
+        .search-input { width: 100%; padding: 8px 10px 8px 30px; border: none; border-radius: 4px; background: #3a4149; color: white; font-size: 13px; box-sizing: border-box; outline: none; }
+        .search-input::placeholder { color: #999; }
+        .search-icon { position: absolute; left: 25px; top: 18px; font-size: 12px; color: #999; pointer-events: none;}
+        .search-results { position: absolute; top: 100%; left: 0; right: 0; background: white; border-radius: 0 0 4px 4px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); max-height: 350px; overflow-y: auto; z-index: 100; border: 1px solid #ccc; border-top: none;}
+        .search-item { padding: 10px 15px; border-bottom: 1px solid #eee; cursor: pointer; color: #555; font-size: 12px; line-height: 1.3;}
+        .search-item:hover { background: #f0f4f8; }
+        .search-item strong { display: block; font-size: 14px; color: var(--color-primary); margin-bottom: 3px;}
+        
+        .sidebar-menu { list-style: none; padding: 0; margin: 0; overflow-y: auto; flex: 1;}
+        .sidebar-menu li { padding: 15px 20px; color: var(--text-sidebar); border-bottom: 1px solid #3a4149; cursor: pointer; transition: background 0.2s; font-size: 14px;}
+        .sidebar-menu li:hover, .sidebar-menu li.active { background-color: #3a4149; color: white; border-left: 4px solid var(--color-warning); }
+        
+        .sidebar-divider { padding: 10px 20px; color: #888; font-size: 11px; text-transform: uppercase; font-weight: bold; background: #202428; letter-spacing: 1px;}
+        .add-custom-btn { color: #fff !important; font-weight: bold; background: rgba(240, 173, 78, 0.2); border-left: 4px solid var(--color-warning) !important;}
+        .add-custom-btn:hover { background: rgba(240, 173, 78, 0.4) !important; }
+
+        .main-content { flex: 1; display: flex; flex-direction: column; position: relative; }
+        .topbar { height: 50px; background-color: var(--bg-topbar); color: white; display: flex; align-items: center; padding: 0 20px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1); z-index: 5; transition: background 0.3s; justify-content: flex-start;}
+        .topbar-controls { display: flex; align-items: center; gap: 15px; }
+        .btn-back { background: transparent; border: 1px solid rgba(255,255,255,0.4); color: white; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold; transition: 0.2s;}
+        .btn-back:hover { background: rgba(255,255,255,0.2); }
+        
+        .custom-badge { background: #ffc107; color: #000; font-size: 10px; padding: 3px 8px; border-radius: 12px; margin-left: 10px; vertical-align: middle; font-weight: bold;}
+        
+        .wizard-scroll-area { flex: 1; overflow-y: auto; padding-bottom: 40px;}
+        .wizard-container { padding: 30px; max-width: 900px; margin: 0 auto; width: 100%; box-sizing: border-box;}
+        
+        .box { background: white; border: 1px solid var(--border-color); border-radius: 6px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .box-title { font-size: 20px; color: var(--bg-sidebar); border-bottom: 2px solid var(--border-color); padding-bottom: 10px; margin-top: 0; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;}
+        
+        .copy-btn { float: right; background: #e9ecef; border: 1px solid #ccc; padding: 3px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; color: #555; transition: 0.2s; font-weight: bold; }
+        .copy-btn:hover { background: #d4edda; border-color: #28a745; color: #155724; }
+
+        .action-box { border-left: 5px solid var(--color-danger); }
+        .action-label { color: var(--color-danger); font-weight: bold; font-size: 12px; text-transform: uppercase; margin-bottom: 8px;}
+        .action-text { font-size: 15px; line-height: 1.5; }
+        
+        .script-box { border-left: 5px solid var(--color-primary); background-color: #f8fbff; }
+        .script-label { color: var(--color-primary); font-weight: bold; font-size: 12px; text-transform: uppercase; margin-bottom: 8px;}
+        .script-text { font-size: 17px; font-style: italic; line-height: 1.5; color: #1a1a1a;}
+        
+        .info-box { border-left: 5px solid var(--color-warning); background-color: #fffaf3; }
+        .info-label { color: var(--color-warning); font-weight: bold; font-size: 12px; text-transform: uppercase; margin-bottom: 8px;}
+
+        .is-custom .action-box { border-left-color: var(--color-custom); }
+        .is-custom .action-label { color: var(--color-custom); }
+        .is-custom .script-box { border-left-color: var(--color-custom); background-color: #f8f6fb; }
+        .is-custom .script-label { color: var(--color-custom); }
+
+        .logo-img { height: 26px; width: auto; vertical-align: middle; margin: 0 2px; }
+        
+        .pdf-btn { display: inline-flex; align-items: center; gap: 8px; background-color: #e9ecef; color: #495057; padding: 8px 15px; border-radius: 4px; text-decoration: none; font-size: 13px; font-weight: bold; margin-top: 10px; border: 1px solid #ced4da; transition: all 0.2s; }
+        .pdf-btn:hover { background-color: #dde2e6; color: #212529; border-color: #adb5bd; }
+
+        .editor-form { display: flex; flex-direction: column; gap: 15px; }
+        .editor-form label { font-weight: bold; font-size: 14px; color: #555; }
+        .editor-form input[type="text"], .editor-form textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-family: inherit; font-size: 14px; box-sizing: border-box; }
+        .editor-form textarea { resize: vertical; min-height: 80px; }
+        
+        .editor-checkbox { display: flex; align-items: center; gap: 10px; background: #f8f9fa; padding: 10px; border-radius: 4px; border: 1px solid #e9ecef;}
+        .editor-checkbox input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; margin: 0;}
+        .editor-checkbox label { font-weight: normal; cursor: pointer; color: #333; margin: 0;}
+        .editor-checkbox small { display: block; color: #777; font-size: 12px; margin-top: 4px;}
+        
+        .editor-buttons-section { margin-top: 10px; padding-top: 15px; border-top: 1px dashed #ccc; }
+        .editor-btn-row { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
+        .editor-btn-row input { flex: 2; }
+        .editor-btn-row select { flex: 3; padding: 10px; border-radius: 4px; border: 1px solid #ccc; font-size: 14px;}
+        .remove-branch-btn { background: #d9534f; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;}
+        .add-branch-btn { background: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold;}
+        
+        .save-btn { background: var(--color-success); color: white; border: none; padding: 15px; font-size: 16px; font-weight: bold; border-radius: 4px; cursor: pointer; transition: 0.2s; margin-top: 10px;}
+        .save-btn:hover { background: #218838; }
+
+        .buttons-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-top: 25px; }
+        .btn { background-color: white; color: #333; border: 1px solid #ccc; padding: 14px; font-size: 14px; border-radius: 4px; cursor: pointer; transition: all 0.2s; text-align: left; font-weight: 500; display: flex; justify-content: space-between; align-items: center;}
+        .btn:hover { background-color: #f8f9fa; border-color: var(--color-primary); box-shadow: 0 2px 4px rgba(0,0,0,0.05); transform: translateY(-1px); }
+        
+        .action-buttons { display: flex; gap: 10px; margin-top: 30px; }
+        .btn-restart { background-color: var(--bg-sidebar); color: white; border: none; text-align: center; flex: 1; padding: 15px; font-size: 16px; border-radius: 4px; cursor: pointer;}
+        .btn-restart:hover { background-color: #1b1e21; }
+        .btn-edit { background-color: #17a2b8; color: white; border: none; padding: 15px; font-size: 16px; border-radius: 4px; cursor: pointer; font-weight: bold;}
+        .btn-edit:hover { background-color: #138496; }
+        .btn-delete { background-color: #dc3545; color: white; border: none; padding: 15px; font-size: 16px; border-radius: 4px; cursor: pointer; font-weight: bold;}
+        .btn-delete:hover { background-color: #c82333; }
+        
+        .hidden { display: none !important; }
+
+        .calc-wrapper { background: #fdfdfe; border: 1px solid #ced4da; border-radius: 6px; padding: 20px; margin-bottom: 20px; border-left: 5px solid #6c757d; }
+        .calc-header { margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid #eee; display: flex; flex-direction: column; gap: 10px;}
+        .calc-select-type { padding: 8px; font-size: 15px; border-radius: 4px; border: 1px solid #ccc; width: 100%; max-width: 400px;}
+        .led-grid { display: grid; gap: 12px; margin-bottom: 20px; }
+        .grid-3x2 { grid-template-columns: 1fr 1fr; }
+        .grid-std { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+        .led-btn { padding: 12px 15px; border-radius: 6px; border: 2px solid transparent; font-weight: bold; font-size: 14px; cursor: pointer; text-align: center; transition: all 0.2s; user-select: none; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 60px;}
+        .led-btn span { font-size: 12px; font-weight: normal; margin-top: 4px; opacity: 0.9;}
+        .led-on { background-color: #d4edda; color: #155724; border-color: #28a745; box-shadow: 0 0 8px rgba(40, 167, 69, 0.4); }
+        .led-off { background-color: #e9ecef; color: #6c757d; border-color: #ced4da; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); }
+        .led-blink { background-color: #fff3cd; color: #856404; border-color: #ffc107; box-shadow: 0 0 8px rgba(255, 193, 7, 0.4); }
+        .led-red { background-color: #f8d7da; color: #721c24; border-color: #dc3545; box-shadow: 0 0 8px rgba(220, 53, 69, 0.4); }
+        .calc-result { padding: 20px; border-radius: 6px; font-size: 15px; line-height: 1.5; display: none; background: #fff; border: 1px solid #ddd; border-left: 5px solid #6c757d;}
+        .res-path { margin-top: 10px; padding: 12px; background: #f8f9fa; border-radius: 4px; border: 1px solid #e9ecef; font-family: monospace; font-size: 13.5px; }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <div class="sidebar-logo"><img src="files/logo.png" alt="HomeNet" class="logo-img"> Wizard</div>
+    
+    <div class="search-container">
+        <input type="text" id="global-search" class="search-input" placeholder="Пошук по базі...">
+        <div id="search-results" class="search-results hidden"></div>
+    </div>
+
+    <ul class="sidebar-menu" id="menu">
+        <li data-id="base_script" onclick="loadNode('base_script')">Базовий скрипт</li>
+        <li data-id="tech_start" onclick="loadNode('tech_start')">Технічна підтримка</li>
+        <li data-id="equip_start" onclick="loadNode('equip_start')">Обладнання та ДБЖ</li>
+        <li data-id="finance_start" onclick="loadNode('finance_start')">Фінанси та оплати</li>
+        <li data-id="services_start" onclick="loadNode('services_start')">Додаткові послуги (IP)</li>
+        <li data-id="pause_start" onclick="loadNode('pause_start')">Послуга «Пауза»</li>
+        <li data-id="tariff_start" onclick="loadNode('tariff_start')">Зміна тарифу</li>
+        <li data-id="disconnect_start" onclick="loadNode('disconnect_start')">Розірвання та переїзд</li>
+        <li data-id="tv_start" onclick="loadNode('tv_start')">Sweet TV</li>
+        <li data-id="admin_start" onclick="loadNode('admin_start')">Адміністративні питання</li>
+        
+        <div class="sidebar-divider">Власні скрипти</div>
+        <div id="custom-scripts-list"></div>
+        <li class="add-custom-btn" onclick="openEditor()">+ Додати скрипт</li>
+    </ul>
+</div>
+
+<div class="main-content" id="main-wrapper">
+    <div class="topbar">
+        <div class="topbar-controls">
+            <button class="btn-back hidden" id="btn-back" onclick="goBack()">⬅ Назад</button>
+            <div id="topbar-title">HomeNet Support</div>
+        </div>
+    </div>
+    <div class="wizard-scroll-area">
+        <div class="wizard-container">
+            
+            <div class="box" id="main-card">
+                <h2 class="box-title" id="node-title">Завантаження...</h2>
+                
+                <div id="info-container" class="box info-box hidden">
+                    <div class="info-label">ДОВІДКОВА ІНФОРМАЦІЯ:</div>
+                    <div id="info-text" class="action-text"></div>
+                </div>
+
+                <div id="calc-container" class="calc-wrapper hidden">
+                    <div class="calc-header">
+                        <strong>Вкажіть тип обладнання абонента:</strong>
+                        <select id="calcType" class="calc-select-type" onchange="renderCalcUI()">
+                            <option value="std">Стандартний модем (4 індикатори: PWR, PON, LOS, LAN)</option>
+                            <option value="mc">Медіаконвертор (6 індикаторів)</option>
+                            <option value="fox">Спрощений модем (3 індикатори: SYS, REG, LINK)</option>
+                        </select>
+                        <small style="color:#666;">Натискайте на кнопки індикаторів, щоб змінити їхній стан.</small>
+                    </div>
+                    <div id="calc-leds"></div>
+                    <div id="calc-result" class="calc-result"></div>
+                </div>
+
+                <div id="action-container" class="box action-box hidden">
+                    <div class="action-label" id="action-label-title">ДІЇ В СИСТЕМІ (ABillS / UserSide):</div>
+                    <div id="action-text" class="action-text"></div>
+                </div>
+
+                <div id="script-container" class="box script-box hidden">
+                    <div class="script-label">КОМУНІКАЦІЯ З АБОНЕНТОМ:</div>
+                    <div id="script-text" class="script-text"><span id="script-text-content"></span></div>
+                </div>
+
+                <div id="buttons-container" class="buttons-grid"></div>
+            </div>
+            
+            <div class="action-buttons hidden" id="bottom-controls">
+                <button class="btn-restart" onclick="loadNode('base_script')">На головну</button>
+                <button class="btn-edit hidden" id="btn-edit" onclick="openEditor(currentRoot)">Редагувати</button>
+                <button class="btn-delete hidden" id="btn-delete" onclick="deleteCustomNode(currentRoot)">🗑 Видалити</button>
+            </div>
+
+            <div class="box hidden" id="editor-card">
+                <h2 class="box-title" id="editor-card-title">Створення власного скрипта</h2>
+                <div class="editor-form">
+                    <div class="editor-checkbox">
+                        <input type="checkbox" id="edit-hidden">
+                        <label for="edit-hidden">
+                            Приховати з бокового меню
+                            <small>Скрипт не буде відображатися зліва. На нього можна буде перейти лише через кнопки з інших скриптів.</small>
+                        </label>
+                    </div>
+                    <div>
+                        <label>Назва кнопки в меню (Коротка):</label>
+                        <input type="text" id="edit-category" placeholder="">
+                    </div>
+                    <div>
+                        <label>Заголовок сторінки:</label>
+                        <input type="text" id="edit-title" placeholder="">
+                    </div>
+                    <div>
+                        <label>Довідкова інформація (Необов'язково):</label>
+                        <textarea id="edit-info" placeholder="Правила, терміни, нюанси..."></textarea>
+                    </div>
+                    <div>
+                        <label>Дії оператора (Що робити в ЮС/Білінгу):</label>
+                        <textarea id="edit-action" placeholder="1. Відкрити...\n2. Натиснути..."></textarea>
+                    </div>
+                    <div>
+                        <label>Скрипт розмови (Що казати клієнту):</label>
+                        <textarea id="edit-script" placeholder="Добрий день, ..."></textarea>
+                    </div>
+                    
+                    <div class="editor-buttons-section">
+                        <label>Кнопки-переходи (Гілки):</label>
+                        <div id="editor-buttons-list"></div>
+                        <button type="button" class="add-branch-btn" onclick="addEditorButton()">+ Додати гілку</button>
+                    </div>
+
+                    <button class="save-btn" onclick="saveCustomNode()">ЗБЕРЕГТИ СКРИПТ</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    let db = {};
+    let currentRoot = 'base_script';
+    let editingNodeId = null;
+    let historyStack = [];
+
+    async function initWizard() {
+        try {
+            const [resBase, resCustom] = await Promise.all([
+                fetch('data.json'),
+                fetch('custom_data.json').catch(() => ({ ok: true, json: () => ({}) }))
+            ]);
+            
+            const baseDb = await resBase.json();
+            const customDb = resCustom.ok ? await resCustom.json() : {};
+            
+            db = { ...baseDb, ...customDb };
+            
+            renderCustomMenu(customDb);
+            loadNode(currentRoot);
+        } catch (error) {
+            document.getElementById('node-title').innerText = "Помилка завантаження бази";
+            document.getElementById('action-text').innerHTML = "Перевірте підключення до сервера (server.js).";
+            document.getElementById('action-container').classList.remove('hidden');
+        }
+    }
+
+    function renderCustomMenu(customDb) {
+        const menu = document.getElementById('custom-scripts-list');
+        menu.innerHTML = '';
+        for (let id in customDb) {
+            if (customDb[id].isHidden) continue; 
+
+            const li = document.createElement('li');
+            li.dataset.id = id;
+            li.innerText = customDb[id].category || customDb[id].title;
+            li.onclick = () => loadNode(id);
+            menu.appendChild(li);
+        }
+    }
+
+    // SEARCH LOGIC
+    document.getElementById('global-search').addEventListener('input', function(e) {
+        const query = e.target.value.toLowerCase().trim();
+        const resContainer = document.getElementById('search-results');
+        resContainer.innerHTML = '';
+
+        if (query.length < 2) {
+            resContainer.classList.add('hidden');
+            return;
+        }
+
+        const terms = query.split(/\s+/);
+        let matches = [];
+
+        for (let key in db) {
+            const node = db[key];
+            const searchableText = `${node.title || ''} ${node.category || ''} ${node.info || ''} ${node.action || ''} ${node.script || ''}`.toLowerCase();
+            
+            const isMatch = terms.every(term => searchableText.includes(term));
+
+            if (isMatch) {
+                matches.push({ key, node });
+            }
+        }
+
+        if (matches.length > 0) {
+            matches.slice(0, 10).forEach(match => { // 10 результ
+                const div = document.createElement('div');
+                div.className = 'search-item';
+                let badge = match.node.isCustom ? ' <span class="custom-badge" style="background:#6f42c1;color:white;">ВЛАСНИЙ</span>' : '';
+                div.innerHTML = `<strong>${match.node.title}</strong>${match.node.category || 'Загальне'}${badge}`;
+                div.onclick = () => {
+                    loadNode(match.key);
+                    resContainer.classList.add('hidden');
+                    e.target.value = '';
+                };
+                resContainer.appendChild(div);
+            });
+            resContainer.classList.remove('hidden');
+        } else {
+            resContainer.innerHTML = '<div class="search-item" style="color:#999; text-align:center;">Нічого не знайдено</div>';
+            resContainer.classList.remove('hidden');
+        }
+    });
+
+    // Close search when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.search-container')) {
+            document.getElementById('search-results').classList.add('hidden');
+        }
+    });
+
+    // BACK NAVIGATION LOGIC
+    function goBack() {
+        if (historyStack.length > 0) {
+            const prevNode = historyStack.pop();
+            loadNode(prevNode, true);
+        }
+    }
+
+    // COPY TEXT LOGIC
+    function copyText(elementId, btnElement) {
+        const textToCopy = document.getElementById(elementId).innerText;
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            const originalText = btnElement.innerText;
+            btnElement.innerText = "✅ Скопійовано";
+            btnElement.style.backgroundColor = "#d4edda";
+            btnElement.style.borderColor = "#28a745";
+            btnElement.style.color = "#155724";
+            setTimeout(() => {
+                btnElement.innerText = originalText;
+                btnElement.style.backgroundColor = "";
+                btnElement.style.borderColor = "";
+                btnElement.style.color = "";
+            }, 2000);
+        });
+    }
+
+    function loadNode(nodeId, isBacking = false) {
+        document.getElementById('editor-card').classList.add('hidden');
+        document.getElementById('main-card').classList.remove('hidden');
+
+        if(!db[nodeId]) return;
+        const node = db[nodeId];
+
+        // History Management
+        if (!isBacking && currentRoot && currentRoot !== nodeId) {
+            historyStack.push(currentRoot);
+        }
+        currentRoot = nodeId;
+
+        // Toggle Back Button
+        const backBtn = document.getElementById('btn-back');
+        if (historyStack.length > 0 && nodeId !== 'base_script') {
+            backBtn.classList.remove('hidden');
+        } else {
+            backBtn.classList.add('hidden');
+            if (nodeId === 'base_script') historyStack = []; // clear history on home
+        }
+
+        // Menu Highlighting
+        document.querySelectorAll('.sidebar-menu li').forEach(li => {
+            li.classList.remove('active');
+            if (li.dataset.id === currentRoot) {
+                li.classList.add('active');
+            }
+        });
+
+        const topbar = document.getElementById('topbar-title');
+        const wrapper = document.getElementById('main-wrapper');
+        
+        document.getElementById('bottom-controls').classList.remove('hidden');
+        if (node.isCustom) {
+            topbar.innerHTML = `${node.category || "Власний скрипт"} <span class="custom-badge">КАСТОМНИЙ</span>`;
+            wrapper.classList.add('is-custom');
+            document.getElementById('action-label-title').innerText = 'ДІЇ:';
+            document.getElementById('btn-edit').classList.remove('hidden');
+            document.getElementById('btn-delete').classList.remove('hidden');
+        } else {
+            topbar.innerText = node.category || "HomeNet Support";
+            wrapper.classList.remove('is-custom');
+            document.getElementById('action-label-title').innerText = 'ДІЇ В СИСТЕМІ (ABillS / UserSide):';
+            document.getElementById('btn-edit').classList.add('hidden');
+            document.getElementById('btn-delete').classList.add('hidden');
+        }
+
+        document.getElementById('node-title').innerText = node.title;
+
+        const calcContainer = document.getElementById('calc-container');
+        if (node.customUi === 'calculator') {
+            calcContainer.classList.remove('hidden');
+            renderCalcUI();
+        } else {
+            calcContainer.classList.add('hidden');
+        }
+
+        const infoBox = document.getElementById('info-container');
+        if (node.info || node.pdf) { 
+            infoBox.classList.remove('hidden'); 
+            let infoHtml = node.info ? node.info.replace(/\n/g, '<br>') : '';
+            if (node.pdf) {
+                infoHtml += `<br><a href="${node.pdf}" target="_blank" class="pdf-btn">📄 Відкрити інструкцію (PDF)</a>`;
+            }
+            document.getElementById('info-text').innerHTML = infoHtml;
+        } else { 
+            infoBox.classList.add('hidden'); 
+        }
+
+        const actionBox = document.getElementById('action-container');
+        if (node.action) { actionBox.classList.remove('hidden'); document.getElementById('action-text').innerHTML = node.action.replace(/\n/g, '<br>'); } 
+        else { actionBox.classList.add('hidden'); }
+
+        const scriptBox = document.getElementById('script-container');
+        if (node.script) { scriptBox.classList.remove('hidden'); document.getElementById('script-text-content').innerText = `«${node.script}»`; } 
+        else { scriptBox.classList.add('hidden'); }
+
+        const btnContainer = document.getElementById('buttons-container');
+        btnContainer.innerHTML = '';
+        if (node.buttons && node.buttons.length > 0) {
+            node.buttons.forEach(btn => {
+                const b = document.createElement('button');
+                b.className = 'btn';
+                b.innerHTML = btn.text;
+                b.onclick = () => loadNode(btn.next);
+                btnContainer.appendChild(b);
+            });
+        }
+    }
+
+    function getAvailableNodesOptions() {
+        let options = '';
+        for(let key in db) {
+            let prefix = db[key].isCustom ? '⭐ [Кастомний] ' : '🔹 ';
+            let name = db[key].title || db[key].category || key;
+            options += `<option value="${key}">${prefix}${name}</option>`;
+        }
+        return options;
+    }
+
+    function addEditorButton(defaultText = '', defaultNext = 'base_script') {
+        const list = document.getElementById('editor-buttons-list');
+        const row = document.createElement('div');
+        row.className = 'editor-btn-row';
+        
+        row.innerHTML = `
+            <input type="text" class="edit-btn-text" placeholder="Текст на кнопці" value="${defaultText}">
+            <select class="edit-btn-next">
+                ${getAvailableNodesOptions()}
+            </select>
+            <button type="button" class="remove-branch-btn" onclick="this.parentElement.remove()">X</button>
+        `;
+        row.querySelector('.edit-btn-next').value = defaultNext;
+        list.appendChild(row);
+    }
+
+    function openEditor(nodeIdToEdit = null) {
+        document.getElementById('main-card').classList.add('hidden');
+        document.getElementById('bottom-controls').classList.add('hidden');
+        document.getElementById('editor-card').classList.remove('hidden');
+
+        document.getElementById('editor-buttons-list').innerHTML = '';
+
+        document.querySelectorAll('.sidebar-menu li').forEach(el => el.classList.remove('active'));
+
+        if (nodeIdToEdit && db[nodeIdToEdit]) {
+            editingNodeId = nodeIdToEdit;
+            const node = db[nodeIdToEdit];
+            
+            const activeLi = document.querySelector(`.sidebar-menu li[data-id="${nodeIdToEdit}"]`);
+            if(activeLi) activeLi.classList.add('active');
+
+            document.getElementById('editor-card-title').innerText = "Редагування скрипта";
+            document.getElementById('edit-hidden').checked = !!node.isHidden;
+            document.getElementById('edit-category').value = node.category || '';
+            document.getElementById('edit-title').value = node.title || '';
+            document.getElementById('edit-info').value = node.info || '';
+            document.getElementById('edit-action').value = node.action || '';
+            document.getElementById('edit-script').value = node.script || '';
+            
+            if (node.buttons && node.buttons.length > 0) {
+                node.buttons.forEach(btn => addEditorButton(btn.text, btn.next));
+            } else {
+                addEditorButton('Завершити', 'base_script');
+            }
+        } else {
+            editingNodeId = null;
+            document.querySelector('.add-custom-btn').classList.add('active');
+            
+            document.getElementById('editor-card-title').innerText = "Створення власного скрипта";
+            document.getElementById('edit-hidden').checked = false;
+            document.getElementById('edit-category').value = '';
+            document.getElementById('edit-title').value = '';
+            document.getElementById('edit-info').value = '';
+            document.getElementById('edit-action').value = '';
+            document.getElementById('edit-script').value = '';
+            addEditorButton('Завершити', 'base_script');
+        }
+    }
+
+    async function saveCustomNode() {
+        const buttons = [];
+        document.querySelectorAll('.editor-btn-row').forEach(row => {
+            const text = row.querySelector('.edit-btn-text').value.trim();
+            const next = row.querySelector('.edit-btn-next').value;
+            if (text) {
+                buttons.push({ text, next });
+            }
+        });
+
+        const newData = {
+            isHidden: document.getElementById('edit-hidden').checked,
+            category: document.getElementById('edit-category').value.trim() || 'Власний скрипт',
+            title: document.getElementById('edit-title').value.trim() || 'Без назви',
+            info: document.getElementById('edit-info').value.trim(),
+            action: document.getElementById('edit-action').value.trim(),
+            script: document.getElementById('edit-script').value.trim(),
+            buttons: buttons
+        };
+
+        if (editingNodeId) {
+            newData.id = editingNodeId;
+        }
+
+        if (!newData.action && !newData.script && !newData.info) {
+            alert("Хоча б одне інформаційне поле!");
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/save-custom', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newData)
+            });
+            const result = await response.json();
+            
+            if (result.success) {
+                alert("Скрипт збережено!");
+                currentRoot = result.id;
+                initWizard(); 
+            }
+        } catch (e) {
+            alert("Помилка збереження! Сервер запущений?");
+        }
+    }
+
+    async function deleteCustomNode(nodeId) {
+        if (!confirm("Видалити цей скрипт?")) return;
+        
+        try {
+            const response = await fetch('/api/delete-custom', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: nodeId })
+            });
+            const result = await response.json();
+            
+            if (result.success) {
+                currentRoot = 'base_script';
+                historyStack = [];
+                initWizard(); 
+            }
+        } catch (e) {
+            alert("Помилка видалення!");
+        }
+    }
+
+    /* === ЛОГІКА КАЛЬКУЛЯТОРА === */
+    const uiConfig = {
+        std: [
+            { id: 'pwr', name: 'POWER', states: ['on|🟢 Горить', 'off|⚪ Не горить'] },
+            { id: 'pon', name: 'PON', states: ['on|🟢 Горить', 'blink|🟡 Блимає', 'off|⚪ Не горить'] },
+            { id: 'los', name: 'LOS', states: ['off|⚪ Не горить', 'red|🔴 Червоний'] },
+            { id: 'lan', name: 'LAN', states: ['on|🟢 Горить/Блимає', 'off|⚪ Не горить'] }
+        ],
+        fox: [
+            { id: 'sys', name: 'SYS (перший)', states: ['blink|🟡 Блимає', 'on|🟢 Горить', 'off|⚪ Не горить'] },
+            { id: 'reg', name: 'REG (третій)', states: ['on|🟢 Горить', 'blink|🟡 Блимає', 'red|🔴 Червоний', 'off|⚪ Не горить'] },
+            { id: 'link', name: 'LINK/ACT (другий)', states: ['on|🟢 Горить/Блимає', 'off|⚪ Не горить'] }
+        ],
+        mc: [
+            { id: 'pwr', name: 'PWR', desc: 'Живлення', states: ['on|🟢 Горить', 'off|⚪ Не горить'] },
+            { id: 'tx', name: 'TX', desc: 'LAN кабель', states: ['on|🟢 Горить', 'off|⚪ Не горить'] },
+            { id: 'fx', name: 'FX', desc: 'Оптика', states: ['on|🟢 Горить', 'off|⚪ Не горить'] },
+            { id: 'fdx', name: 'FDX', desc: 'Дуплекс', states: ['on|🟢 Горить', 'off|⚪ Не горить'] },
+            { id: '100', name: '100', desc: 'Швидкість', states: ['on|🟢 Горить', 'off|⚪ Не горить'] },
+            { id: '1000', name: '1000', desc: 'Швидкість', states: ['on|🟢 Горить', 'off|⚪ Не горить'] }
+        ]
+    };
+
+    const classMap = { 'on': 'led-on', 'off': 'led-off', 'blink': 'led-blink', 'red': 'led-red' };
+
+    function renderCalcUI() {
+        const type = document.getElementById('calcType').value;
+        const config = uiConfig[type];
+        const container = document.getElementById('calc-leds');
+        
+        container.innerHTML = '';
+        container.className = type === 'mc' ? 'led-grid grid-3x2' : 'led-grid grid-std';
+
+        config.forEach(led => {
+            const btn = document.createElement('div');
+            btn.className = `led-btn ${classMap[led.states[0].split('|')[0]]}`;
+            btn.dataset.id = led.id;
+            btn.dataset.states = led.states.join(',');
+            btn.dataset.currentIndex = 0;
+            
+            const descHtml = led.desc ? `<span>(${led.desc})</span>` : '';
+            btn.innerHTML = `${led.name}<br><span>${led.states[0].split('|')[1]}</span>${descHtml}`;
+            
+            btn.onclick = function() {
+                let states = this.dataset.states.split(',');
+                let nextIndex = (parseInt(this.dataset.currentIndex) + 1) % states.length;
+                this.dataset.currentIndex = nextIndex;
+                
+                let nextState = states[nextIndex].split('|');
+                
+                this.classList.remove('led-on', 'led-off', 'led-blink', 'led-red');
+                this.classList.add(classMap[nextState[0]]);
+                this.innerHTML = `${led.name}<br><span>${nextState[1]}</span>${descHtml}`;
+                
+                analyzeDiagnosis(type);
+            };
+            container.appendChild(btn);
+        });
+        
+        analyzeDiagnosis(type);
+    }
+
+    function getState(id) {
+        const btn = document.querySelector(`.led-btn[data-id="${id}"]`);
+        if (!btn) return null;
+        let states = btn.dataset.states.split(',');
+        return states[btn.dataset.currentIndex].split('|')[0];
+    }
+
+    function analyzeDiagnosis(type) {
+        const resBox = document.getElementById('calc-result');
+        resBox.style.display = 'block';
+        resBox.style.borderLeftColor = '#dc3545';
+        
+        let title = "";
+        let path = "";
+
+        if (type === 'std') {
+            const pwr = getState('pwr'), pon = getState('pon'), los = getState('los'), lan = getState('lan');
+
+            if (pwr === 'off') {
+                title = "Відсутнє живлення або апаратна поломка модему.";
+                path = "1. Скинути сесію в ABillS (Hang Up), якщо вона є.\n2. UserSide ➔ Створити завдання ➔ Інцидент.\n3. Категорія: «Діагностика обладнання».\n4. Опис: «Відсутня індикація, БЖ перевірили».\n5. Виконавець: КУЩ.";
+            } else if (los === 'red') {
+                title = "Втрата оптичного сигналу (Обрив на лінії або аварія).";
+                path = "1. Спитати про видимі пошкодження кабелю в квартирі.\n2. Скинути сесію в ABillS (Hang Up).\n3. UserSide ➔ Створити завдання ➔ Інцидент ➔ «Обрив на лінії / LOS».\n4. Опис: «Горить LOS, пошкоджень в квартирі немає».\n5. Виконавець: ВІДДІЛ МОНІТОРГИНГУ (якщо обрив у квартирі — КУЩ).";
+            } else if (pon !== 'on') {
+                title = "Відсутня реєстрація модему в мережі (PON не світиться зеленим).";
+                path = "1. Обов'язково скинути сесію в ABillS (Hang Up).\n2. Попросити абонента вимкнути модем з розетки на 15 сек.\n3. Якщо не допомогло: UserSide ➔ Інцидент ➔ «Діагностика обладнання».\n4. Опис: «Блимає/не горить PON, перезавантаження не допомогло».\n5. Виконавець: ВІДДІЛ МОНІТОРГИНГУ.";
+            } else if (lan === 'off') {
+                title = "Відсутній зв'язок між модемом та пристроєм (роутером/ПК).";
+                path = "1. Перевірити, чи вставлено кабель у WAN-порт роутера.\n2. Якщо роутер компанії: UserSide ➔ Інцидент ➔ Діагностика ➔ КУЩ.\n3. Якщо роутер клієнта/ПК: Запропонувати платний виїзд (100 грн + робота).\n4. Заявка ➔ «Додаткові послуги» (вказати: 'абонент попереджений про платний виїзд').";
+            } else {
+                title = "Індикація в межах норми. Апаратно лінія справна.";
+                path = "1. Скинути сесію в ABillS (Hang Up).\n2. Попросити перезавантажити роутер.\n3. Направити в кабінет 176.105.220.100 для авторизації.\n4. Якщо не допомогло — внести дані в «Таблицю тех. лінії» для глибокої діагностики.";
+                resBox.style.borderLeftColor = '#28a745';
+            }
+        } 
+        else if (type === 'fox') {
+            const sys = getState('sys'), reg = getState('reg'), link = getState('link');
+
+            if (sys !== 'blink') {
+                title = "Апаратна помилка модему (SYS має блимати).";
+                path = "1. Скинути сесію в ABillS (Hang Up).\n2. UserSide ➔ Створити завдання ➔ Інцидент ➔ «Діагностика обладнання».\n3. Виконавець: КУЩ.";
+            } else if (reg === 'red') {
+                title = "Втрата оптичного сигналу (Аналог LOS).";
+                path = "1. Спитати про видимі пошкодження кабелю.\n2. Скинути сесію в ABillS (Hang Up).\n3. UserSide ➔ Створити завдання ➔ Інцидент ➔ «Обрив на лінії / LOS».\n4. Виконавець: ВІДДІЛ МОНІТОРГИНГУ (або КУЩ, якщо порвано вдома).";
+            } else if (reg !== 'on') {
+                title = "Відсутня реєстрація (Аналог PON).";
+                path = "1. Скинути сесію (Hang Up) та перезавантажити модем.\n2. UserSide ➔ Інцидент ➔ «Діагностика обладнання».\n3. Опис: «REG блимає/не горить».\n4. Виконавець: ВІДДІЛ МОНІТОРГИНГУ.";
+            } else if (link === 'off') {
+                title = "Відсутній зв'язок по LAN.";
+                path = "1. Перевірити кабель між модемом і роутером.\n2. Роутер наш: Інцидент ➔ КУЩ.\n3. Роутер чужий: Заявка «Додаткові послуги» (Платний виклик 100 грн).";
+            } else {
+                title = "Індикація в межах норми.";
+                path = "1. Скинути сесію в ABillS (Hang Up).\n2. Направити в особистий кабінет (176.105.220.100).\n3. Якщо проблема лишається — в Таблицю тех. лінії.";
+                resBox.style.borderLeftColor = '#28a745';
+            }
+        }
+        else if (type === 'mc') {
+            const pwr = getState('pwr'), fx = getState('fx'), tx = getState('tx');
+
+            if (pwr === 'off') {
+                title = "Повністю відсутнє живлення (МС знеструмлений).";
+                path = "1. Попросити абонента перевірити розетку та блок живлення.\n2. Якщо не працює: UserSide ➔ Інцидент ➔ «Діагностика обладнання».\n3. Виконавець: КУЩ.";
+            } else if (fx === 'off' && tx === 'off') {
+                title = "Відсутнє з'єднання і по Оптиці, і по LAN.";
+                path = "1. Скинути сесію (Hang Up).\n2. UserSide ➔ Інцидент ➔ «Діагностика обладнання».\n3. Опис: «Горить лише PWR. Відсутній сигнал по FX та TX».\n4. Виконавець: КУЩ.";
+            } else if (fx === 'off') {
+                title = "Відсутнє з'єднання по оптичному кабелю (Аналог LOS).";
+                path = "1. Скинути сесію (Hang Up).\n2. UserSide ➔ Інцидент ➔ «Обрив на лінії / LOS».\n3. Виконавець: ВІДДІЛ МОНІТОРГИНГУ (або КУЩ, якщо обрив вдома).";
+            } else if (tx === 'off') {
+                title = "Відсутнє з'єднання по LAN кабелю.";
+                path = "1. Перевірити кабель від конвертора до роутера/ПК.\n2. Роутер наш: Інцидент ➔ КУЩ.\n3. Роутер чужий: Заявка «Додаткові послуги» (Платний виклик 100 грн).";
+            } else {
+                title = "Індикація в нормі.";
+                path = "1. Скинути сесію в ABillS (Hang Up).\n2. Перезавантажити роутер та зайти на 176.105.220.100.\n3. Внести запит у Таблицю тех. лінії, якщо не допомогло.";
+                resBox.style.borderLeftColor = '#28a745';
+            }
+        }
+
+        resBox.innerHTML = `
+            <strong>Діагноз:</strong> ${title}
+            <div class="res-path">
+                <strong>Дії в системі:</strong><br>
+                ${path.replace(/\n/g, '<br>')}
+            </div>
+        `;
+    }
+
+    window.onload = initWizard;
+</script>
+
+</body>
+</html>
